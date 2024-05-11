@@ -1,3 +1,4 @@
+#![forbid(missing_docs)]
 //! # Metrical
 //! > A simple metrics database.
 //!
