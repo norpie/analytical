@@ -35,6 +35,27 @@
 //!    "value": 1
 //! }
 //! ```
+
+use serde::{Deserialize, Serialize};
+
+extern crate rocksdb;
+
+/// # Metrical
+/// The main struct that is used to interact with the database.
+struct Metrical {
+    db: rocksdb::DB,
+}
+
+/// # Metric
+/// A metric is a single data point that is stored in the database.
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+struct Metric {
+    name: String,
+    key: String,
+    timestamp: u64,
+    value: f64,
+}
+
 fn main() {
     println!("Hello, world!");
 }
