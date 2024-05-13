@@ -41,6 +41,7 @@
 //! Each `metric` has its own `store` in the database. Each `key` has a "table" in the `store`.
 //! This allows for easy querying of metrics.
 
+use clap::{command, Parser};
 use serde::{Deserialize, Serialize};
 
 extern crate rocksdb;
@@ -61,6 +62,16 @@ struct Metric {
     value: f64,
 }
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// The path to the database.
+    #[clap(short, long)]
+    db_path: String,
+}
+
 fn main() {
-    println!("Hello, world!");
+    let args = Args::parse();
+
+    println!("Opening database at: {}", args.db_path);
 }
