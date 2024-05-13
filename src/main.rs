@@ -41,15 +41,35 @@
 //! Each `metric` has its own `store` in the database. Each `key` has a "table" in the `store`.
 //! This allows for easy querying of metrics.
 
+use std::path::PathBuf;
+
+use anyhow::{Result, Error};
 use clap::{command, Parser};
+use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 
 extern crate rocksdb;
 
+/// The global instance of the Metrical struct.
+static INSTANCE: OnceCell<Metrical> = OnceCell::new();
+
 /// # Metrical
 /// The main struct that is used to interact with the database.
+#[derive(Debug)]
 struct Metrical {
     db: rocksdb::DB,
+}
+
+impl Metrical {
+    /// Create a new Metrical instance.
+    fn new(db_path: PathBuf) -> Result<Self, Error> {
+        let db = rocksdb::DB::open_default(db_path)?;
+        Ok(Self { db })
+    }
+
+    fn db(&mut self) -> &mut rocksdb::DB {
+        &mut self.db
+    }
 }
 
 /// # Metric
@@ -66,12 +86,17 @@ struct Metric {
 #[command(version, about, long_about = None)]
 struct Args {
     /// The path to the database.
-    #[clap(short, long)]
-    db_path: String,
+    #[clap(
+        long,
+        default_value = "/etc/metrical/default.db"
+    )]
+    db_path: PathBuf,
 }
 
-fn main() {
+fn main() -> Result<(), Error> {
     let args = Args::parse();
 
-    println!("Opening database at: {}", args.db_path);
+    println!("Opening database at: {:?}", args.db_path);
+    INSTANCE.set(Metrical::new(args.db_path)?).map_err(|_| anyhow::anyhow!("Failed to set Metrical instance"))?;
+    Ok(())
 }
