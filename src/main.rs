@@ -35,6 +35,11 @@
 //!    "value": 1
 //! }
 //! ```
+//!
+//! ## Storage
+//!
+//! Each `metric` has its own `store` in the database. Each `key` has a "table" in the `store`.
+//! This allows for easy querying of metrics.
 
 use serde::{Deserialize, Serialize};
 
