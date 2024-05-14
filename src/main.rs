@@ -41,9 +41,9 @@
 //! Each `metric` has its own `store` in the database. Each `key` has a "table" in the `store`.
 //! This allows for easy querying of metrics.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use anyhow::{Result, Error};
+use anyhow::{Error, Result};
 use clap::{command, Parser};
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
@@ -86,17 +86,39 @@ struct Metric {
 #[command(version, about, long_about = None)]
 struct Args {
     /// The path to the database.
-    #[clap(
-        long,
-        default_value = "/etc/metrical/default.db"
-    )]
+    #[clap(long, default_value = "/etc/metrical/default.db")]
     db_path: PathBuf,
+}
+
+fn create_db_dir(db: &Path) -> Result<(), Error> {
+    let dir = db
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Failed to get the data directory"))?;
+    let result = std::fs::create_dir_all(dir);
+    if result.is_ok() {
+        return Ok(());
+    }
+    let e = result.unwrap_err();
+    let kind = e.kind();
+    match kind {
+        std::io::ErrorKind::AlreadyExists => Ok(()),
+        std::io::ErrorKind::PermissionDenied => Err(anyhow::anyhow!(
+            "Permission denied to create the data directory"
+        )),
+        _ => Err(anyhow::anyhow!(
+            "Miscellaneous error creating the data directory: {:?}",
+            e
+        )),
+    }
 }
 
 fn main() -> Result<(), Error> {
     let args = Args::parse();
 
     println!("Opening database at: {:?}", args.db_path);
-    INSTANCE.set(Metrical::new(args.db_path)?).map_err(|_| anyhow::anyhow!("Failed to set Metrical instance"))?;
+    create_db_dir(&args.db_path)?;
+    INSTANCE
+        .set(Metrical::new(args.db_path)?)
+        .map_err(|_| anyhow::anyhow!("Failed to set Metrical instance"))?;
     Ok(())
 }
