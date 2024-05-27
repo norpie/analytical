@@ -50,6 +50,9 @@ use serde::{Deserialize, Serialize};
 
 extern crate rocksdb;
 
+/// The mod that contains the interface for the database.
+mod interface;
+
 /// The global instance of the Metrical struct.
 static INSTANCE: OnceCell<Metrical> = OnceCell::new();
 
