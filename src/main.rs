@@ -41,12 +41,15 @@
 //! Each `metric` has its own `store` in the database. Each `key` has a "table" in the `store`.
 //! This allows for easy querying of metrics.
 
-use std::path::{Path, PathBuf};
+use std::{path::{Path, PathBuf}, sync::Arc};
 
 use anyhow::{Error, Result};
 use clap::{command, Parser};
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
+use tokio::sync::RwLock;
+
+use crate::interface::http;
 
 extern crate rocksdb;
 
@@ -54,7 +57,7 @@ extern crate rocksdb;
 mod interface;
 
 /// The global instance of the Metrical struct.
-static INSTANCE: OnceCell<Metrical> = OnceCell::new();
+static INSTANCE: OnceCell<Arc<RwLock<Metrical>>> = OnceCell::new();
 
 /// # Metrical
 /// The main struct that is used to interact with the database.
@@ -64,6 +67,10 @@ struct Metrical {
 }
 
 impl Metrical {
+    fn get_instance() -> &'static Arc<RwLock<Self>> {
+        INSTANCE.get().expect("Metrical instance not initialized")
+    }
+
     /// Create a new Metrical instance.
     fn new(db_path: PathBuf) -> Result<Self, Error> {
         let db = rocksdb::DB::open_default(db_path)?;
@@ -115,13 +122,17 @@ fn create_db_dir(db: &Path) -> Result<(), Error> {
     }
 }
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let args = Args::parse();
 
     println!("Opening database at: {:?}", args.db_path);
     create_db_dir(&args.db_path)?;
     INSTANCE
-        .set(Metrical::new(args.db_path)?)
+        .set(Arc::new(RwLock::new(Metrical::new(args.db_path)?)))
         .map_err(|_| anyhow::anyhow!("Failed to set Metrical instance"))?;
+
+    http::serve().await?;
+
     Ok(())
 }
