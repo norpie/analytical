@@ -41,7 +41,10 @@
 //! Each `metric` has its own `store` in the database. Each `key` has a "table" in the `store`.
 //! This allows for easy querying of metrics.
 
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::{Error, Result};
 use clap::{command, Parser};
@@ -77,8 +80,33 @@ impl Metrical {
         Ok(Self { db })
     }
 
-    fn db(&mut self) -> &mut rocksdb::DB {
-        &mut self.db
+    fn add_metric(&mut self, metric: Metric) -> Result<(), Error> {
+        let key = format!("{}:{}:{}", metric.name, metric.key, metric.timestamp);
+        let value = metric.value.to_string();
+        self.db
+            .put(key.as_bytes(), value.as_bytes())
+            .map_err(|e| e.into())
+    }
+
+    fn get_metrics(&mut self, name: &str, key: &str) -> Result<Vec<Metric>, Error> {
+        let prefix = format!("{}:{}:", name, key);
+        let iter = self.db.prefix_iterator(prefix.as_bytes());
+        let mut metrics = Vec::new();
+        for result in iter {
+            let (key, value) = result?;
+            let key = std::str::from_utf8(&key)?;
+            let value = std::str::from_utf8(&value)?;
+            let parts: Vec<&str> = key.split(':').collect();
+            let timestamp = parts[2].parse::<u64>()?;
+            let value = value.parse::<f64>()?;
+            metrics.push(Metric {
+                name: parts[0].to_string(),
+                key: parts[1].to_string(),
+                timestamp,
+                value,
+            });
+        }
+        Ok(metrics)
     }
 }
 
