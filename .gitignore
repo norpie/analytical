@@ -1,2 +1,4 @@
 /target
 db
+rust-toolchain.toml
+shell.nix
