@@ -1,4 +1,3 @@
-/target
-db
+**/target
 rust-toolchain.toml
 shell.nix
