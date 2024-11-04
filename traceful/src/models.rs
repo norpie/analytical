@@ -7,23 +7,12 @@ use storeful::Labels;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Trace {
     pub labels: Labels,
-    pub start_time: i64,
-    pub end_time: i64,
     pub events: TraceEvents,
 }
 
 impl Display for Trace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let start_date = DateTime::from_timestamp_nanos(self.start_time).to_utc();
-        let end_date = DateTime::from_timestamp_nanos(self.end_time).to_utc();
-        write!(
-            f,
-            "{} {} {} {}",
-            start_date.to_rfc3339_opts(SecondsFormat::Nanos, true),
-            end_date.to_rfc3339_opts(SecondsFormat::Nanos, true),
-            self.labels,
-            self.events
-        )
+        write!(f, "{} {}", self.labels, self.events)
     }
 }
 
@@ -92,8 +81,6 @@ mod tests {
                 key: "key1".to_string(),
                 value: "value1".to_string(),
             }]),
-            start_time: Utc::now().timestamp_nanos_opt().unwrap(),
-            end_time: Utc::now().timestamp_nanos_opt().unwrap() + 9213123123,
             events: TraceEvents(vec![
                 TraceEvent {
                     name: "event1".to_string(),
