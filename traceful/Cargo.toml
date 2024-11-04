@@ -1,0 +1,9 @@
+[package]
+name = "traceful"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+storeful = { path = "../storeful" }
+chrono = { version = "0.4.38", features = ["serde"] }
+serde = { version = "1.0.213", features = ["derive"] }

@@ -1311,6 +1311,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "logical"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "storeful",
+]
+
+[[package]]
 name = "lz4-sys"
 version = "1.11.1+lz4-1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1331,11 +1341,15 @@ name = "metrical"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
+ "chrono",
  "clap",
  "once_cell",
+ "rand 0.8.5",
  "rocksdb",
  "serde",
  "serde_json",
+ "storeful",
  "tide",
  "tokio",
 ]
@@ -1689,6 +1703,7 @@ checksum = "6bd13e55d6d7b8cd0ea569161127567cd587676c99f4472f779a0279aa60a7a7"
 dependencies = [
  "libc",
  "librocksdb-sys",
+ "serde",
 ]
 
 [[package]]
@@ -1973,6 +1988,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213701ba3370744dcd1a12960caa4843b3d68b4d1c0a5d575e0d65b2ee9d16c0"
 
 [[package]]
+name = "storeful"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "chrono",
+ "clap",
+ "rocksdb",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2207,6 +2235,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.85",
+]
+
+[[package]]
+name = "traceful"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "storeful",
 ]
 
 [[package]]
