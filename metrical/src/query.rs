@@ -1,4 +1,14 @@
-use storeful::{Label, Labels};
+use storeful::{traits::Query, Label, Labels};
+
+impl Query for MetricQuery {
+    fn from_str(s: &str) -> Self {
+        todo!()
+    }
+
+    fn to_string(&self) -> String {
+        todo!()
+    }
+}
 
 #[derive(Debug)]
 pub struct MetricQuery {
