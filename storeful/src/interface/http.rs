@@ -1,51 +1,97 @@
-use anyhow::Error;
-use serde::Deserialize;
-use tide::{Request, Response};
+use std::{future::Future, pin::Pin, sync::Arc, sync::Mutex};
 
-use crate::{Metric, Metrical};
+use crate::{ModelEndpoints, Query};
+use http_body_util::Full;
+use hyper::{
+    body::{Bytes, Incoming as IncomingBody},
+    server::conn::http1::Builder,
+    service::Service,
+    Request, Response,
+};
+use hyper_util::rt::TokioIo;
+use serde::{de::DeserializeOwned, Serialize};
+use tokio::net::TcpListener;
 
-pub async fn serve() -> Result<(), Error> {
-    let hostname = "localhost";
-    let port = 4340;
+pub async fn start_server<M, T, Q>(handler: Arc<Mutex<M>>, host: &str, port: u16)
+where
+    T: Send + Sync + Serialize + DeserializeOwned + 'static,
+    Q: Query,
+    M: ModelEndpoints<T, Q> + Send + Sync + 'static,
+{
+    let listener = TcpListener::bind(format!("{}:{}", host, port))
+        .await
+        .unwrap();
 
-    let addr = format!("{}:{}", hostname, port);
+    let svc = Svc {
+        handler,
+        _t: std::marker::PhantomData,
+        _q: std::marker::PhantomData,
+    };
 
-    let mut app = tide::new();
-    app.at("/ping").get(ping);
-
-    app.at("/metrics").post(add_metric);
-    app.at("/metrics").get(get_metrics);
-
-    println!("Listening on http://{}", addr);
-    app.listen(addr).await?;
-    Ok(())
+    loop {
+        let (stream, _) = listener.accept().await.unwrap();
+        let io = TokioIo::new(stream);
+        let svc_clone = svc.clone();
+        tokio::task::spawn(async move {
+            if let Err(err) = Builder::new().serve_connection(io, svc_clone).await {
+                eprintln!("Error serving connection: {:?}", err);
+            }
+        });
+    }
 }
 
-// Return "pong" for a GET request to /ping
-async fn ping(_req: Request<()>) -> tide::Result {
-    Ok("pong".into())
+#[derive(Debug)]
+struct Svc<M, T, Q>
+where
+    T: Send + Sync + Serialize + DeserializeOwned + 'static,
+    Q: Query,
+    M: ModelEndpoints<T, Q> + Send + Sync + 'static,
+{
+    handler: Arc<Mutex<M>>,
+    _t: std::marker::PhantomData<T>,
+    _q: std::marker::PhantomData<Q>,
 }
 
-async fn add_metric(mut req: Request<()>) -> tide::Result {
-    let metric: Metric = req.body_json().await?;
-    let mut metrical = Metrical::get_instance().write().await;
-    metrical.add_metric(metric)?;
-    Ok(Response::new(200))
+impl<M, Q, T> Clone for Svc<M, T, Q>
+where
+    T: Send + Sync + Serialize + DeserializeOwned + 'static,
+    Q: Query,
+    M: ModelEndpoints<T, Q> + Send + Sync + 'static,
+{
+    fn clone(&self) -> Self {
+        Self {
+            handler: self.handler.clone(),
+            _t: std::marker::PhantomData,
+            _q: std::marker::PhantomData,
+        }
+    }
 }
 
-#[derive(Debug, Deserialize)]
-struct MetricQuery {
-    name: String,
-    key: String,
-}
+impl<M, T, Q> Service<Request<IncomingBody>> for Svc<M, T, Q>
+where
+    T: Send + Sync + Serialize + DeserializeOwned + 'static,
+    Q: Query,
+    M: ModelEndpoints<T, Q> + Send + Sync + 'static,
+{
+    type Response = Response<Full<Bytes>>;
+    type Error = hyper::Error;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
-async fn get_metrics(req: Request<()>) -> tide::Result {
-    let query: MetricQuery = req.query()?;
-    let mut metrical = Metrical::get_instance().write().await;
-    let metrics = metrical.get_metrics(&query.name, &query.key)?;
-    let mut response = Response::new(200);
-    let json = serde_json::to_string(&metrics)?;
-    response.set_body(json);
-    response.set_content_type("application/json");
-    Ok(response)
+    fn call(&self, req: Request<IncomingBody>) -> Self::Future {
+        let mut handler = self.handler.lock().unwrap();
+        fn mk_response(s: String) -> Result<Response<Full<Bytes>>, hyper::Error> {
+            Ok(Response::builder().body(Full::new(Bytes::from(s))).unwrap())
+        }
+
+        if req.uri().path() != "/favicon.ico" {
+            mk_response("favicon".into()).unwrap();
+        }
+
+        let res = match req.uri().path() {
+            "/" => mk_response("index".into()),
+            _ => mk_response("oh no! not found".into()),
+        };
+
+        Box::pin(async { res })
+    }
 }
