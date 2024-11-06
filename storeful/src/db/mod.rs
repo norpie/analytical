@@ -2,7 +2,8 @@ use std::collections::HashSet;
 
 use crate::prelude::*;
 
-pub mod rocksdb;
+// pub mod rocksdb;
+pub mod sled;
 
 pub trait BackendDatabase {
     fn start_batch(&mut self) -> Result<()>;
@@ -22,12 +23,18 @@ pub trait BackendDatabase {
     fn query_index(&self, cf: &str, index_key: &str) -> Result<HashSet<Box<[u8]>>>;
 }
 
-pub struct Storeful {
-    pub backend: Box<dyn BackendDatabase>,
+pub struct Storeful<B>
+where
+    B: BackendDatabase,
+{
+    pub backend: B,
 }
 
-impl Storeful {
-    pub fn new(backend: Box<dyn BackendDatabase>) -> Self {
+impl<B> Storeful<B>
+where
+    B: BackendDatabase,
+{
+    pub fn new(backend: B) -> Self {
         Self { backend }
     }
 }
