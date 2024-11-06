@@ -24,8 +24,11 @@ pub enum StorefulError {
     #[error("bincode error")]
     Bincode(#[from] bincode::Error),
 
-    #[error("rocksdb error")]
-    Rocks(#[from] rocksdb::Error),
+    // #[error("rocksdb error")]
+    // Rocks(#[from] rocksdb::Error),
+
+    #[error("sled error")]
+    Sled(#[from] sled::Error),
 
     #[error("from utf8 error")]
     StringUtf8(#[from] std::string::FromUtf8Error),
@@ -41,4 +44,9 @@ pub enum StorefulError {
 
     #[error("batch already started")]
     BatchAlreadyStarted,
+    #[error("batch not started")]
+    BatchNotStarted,
+
+    #[error("invalid query range")]
+    InvalidQueryRange,
 }
