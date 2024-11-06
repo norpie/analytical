@@ -1,4 +1,5 @@
-use storeful::{traits::Query, Label, Labels};
+use serde::{Deserialize, Serialize};
+use storeful::{Label, Labels, Query};
 
 impl Query for MetricQuery {
     fn from_str(s: &str) -> Self {
@@ -10,7 +11,7 @@ impl Query for MetricQuery {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MetricQuery {
     pub name: Option<String>,
     pub timestamp_start: Option<i64>,
