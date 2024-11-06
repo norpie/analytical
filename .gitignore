@@ -4,3 +4,5 @@ shell.nix
 metrical/test.db
 traceful/test.db
 logical/test.db
+default.db
+flamegraph.sh
