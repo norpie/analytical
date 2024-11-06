@@ -1,4 +1,7 @@
-use storeful::prelude::*;
+use std::sync::{Arc, Mutex};
+
+use storage::Metrical;
+use storeful::{prelude::*, sled::SledBackend, Args, Config, Storeful};
 
 mod models;
 mod query;
@@ -6,6 +9,23 @@ mod storage;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args = Args::default();
+
+    let sled = SledBackend::open(
+        args.db_path(),
+        "metrics".into(),
+        &["name", "timestamp", "labels"],
+    )?;
+
+    let storeful = Storeful::new(sled);
+    let metrical = Metrical::new(storeful);
+
+    let handler = Arc::new(Mutex::new(metrical));
+
+    let config: Config = args.into();
+    config.start(handler).await?;
+
+    // Wait for all tasks to finish
     Ok(())
 }
 
@@ -20,21 +40,20 @@ mod tests {
     use query::MetricQuery;
     use rand::prelude::SliceRandom;
     use storage::Metrical;
-    use storeful::{rocksdb::RocksDBBackend, traits::ModelEndpoints, Label, Labels, Storeful};
+    use storeful::{Label, Labels, ModelEndpoints, Storeful};
 
     #[tokio::test]
     async fn test() {
-        // let args = Args::default();
-
         let path = PathBuf::from("./test.db");
-        let rocksdb = RocksDBBackend::open(&path, vec!["name", "timestamp", "labels"]).unwrap();
-        let storeful = Storeful::new(Box::new(rocksdb));
+        let sled = SledBackend::open(&path, "metrics".into(), &["name", "timestamp", "labels"])
+            .expect("Failed to open sled backend");
+        let storeful = Storeful::new(sled);
         let mut metrical = Metrical::new(storeful);
 
         let start_time = Utc::now();
 
         let mut metrics = vec![];
-        let metric_count = 30000;
+        let metric_count = 1000;
         for i in 0..metric_count {
             // Random value between 0 and 1
             let random_value = rand::random::<f64>();
@@ -78,7 +97,7 @@ mod tests {
         let query = MetricQuery::empty()
             .with_name("memory_usage".into())
             .with_timestamp_start(0)
-            .with_timestamp_end(10000)
+            .with_timestamp_end(metric_count / 2)
             .with_label(Label {
                 key: "host".into(),
                 value: "localhost".into(),

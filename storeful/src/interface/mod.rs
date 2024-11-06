@@ -1,5 +1,8 @@
-use std::future::Future;
 use serde::{de::DeserializeOwned, Serialize};
+use std::{
+    future::Future,
+    sync::{Arc, Mutex},
+};
 
 use crate::prelude::*;
 
@@ -7,8 +10,17 @@ pub mod http;
 // pub mod websocket;
 // pub mod grpc;
 
-pub trait Interface<T> {
-    fn start(&self, host: &str, post: u8) -> impl Future<Output = Result<()>>;
+pub trait Interface {
+    fn start<T, Q, M>(
+        &self,
+        handler: Arc<Mutex<M>>,
+        host: &str,
+        post: u16,
+    ) -> impl Future<Output = Result<()>>
+    where
+        T: Send + Sync + Serialize + DeserializeOwned + 'static,
+        Q: Query,
+        M: ModelEndpoints<T, Q> + Send + Sync + 'static;
 }
 
 pub trait ModelEndpoints<T, Q>

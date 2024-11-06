@@ -7,10 +7,15 @@ use clap::{command, Parser};
 pub struct RawArgs {
     #[clap(long)]
     db_path: Option<PathBuf>,
+
     #[clap(long)]
     host: Option<String>,
+
     #[clap(long)]
     port: Option<u16>,
+
+    #[clap(long)]
+    http: bool,
 }
 
 impl RawArgs {
@@ -26,6 +31,7 @@ impl From<RawArgs> for Args {
             db_path: raw_args.db_path.unwrap(),
             host: "127.0.0.1".to_string(),
             port: 4040,
+            http: raw_args.http,
         }
     }
 }
@@ -35,6 +41,7 @@ pub struct Args {
     pub db_path: PathBuf,
     pub host: String,
     pub port: u16,
+    pub http: bool,
 }
 
 impl Default for Args {
@@ -54,5 +61,9 @@ impl Args {
 
     pub fn port(&self) -> u16 {
         self.port
+    }
+
+    pub fn http(&self) -> bool {
+        self.http
     }
 }

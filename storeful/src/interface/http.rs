@@ -1,6 +1,6 @@
 use std::{future::Future, pin::Pin, sync::Arc, sync::Mutex};
 
-use crate::{ModelEndpoints, Query};
+use crate::{prelude::*, ModelEndpoints, Query};
 use http_body_util::Full;
 use hyper::{
     body::{Bytes, Incoming as IncomingBody},
@@ -12,7 +12,10 @@ use hyper_util::rt::TokioIo;
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::net::TcpListener;
 
-pub async fn start_server<M, T, Q>(handler: Arc<Mutex<M>>, host: &str, port: u16)
+pub struct Http;
+
+// impl Interface for Http {
+pub async fn start<T, Q, M>(/*&self,*/ handler: Arc<Mutex<M>>, host: &str, port: u16) -> Result<()>
 where
     T: Send + Sync + Serialize + DeserializeOwned + 'static,
     Q: Query,
@@ -29,7 +32,7 @@ where
     };
 
     loop {
-        let (stream, _) = listener.accept().await.unwrap();
+        let (stream, _) = listener.accept().await?;
         let io = TokioIo::new(stream);
         let svc_clone = svc.clone();
         tokio::task::spawn(async move {
@@ -39,6 +42,7 @@ where
         });
     }
 }
+// }
 
 #[derive(Debug)]
 struct Svc<M, T, Q>
@@ -75,11 +79,12 @@ where
 {
     type Response = Response<Full<Bytes>>;
     type Error = hyper::Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    type Future =
+        Pin<Box<dyn Future<Output = std::result::Result<Self::Response, Self::Error>> + Send>>;
 
     fn call(&self, req: Request<IncomingBody>) -> Self::Future {
-        let mut handler = self.handler.lock().unwrap();
-        fn mk_response(s: String) -> Result<Response<Full<Bytes>>, hyper::Error> {
+        let _handler = self.handler.lock().unwrap();
+        fn mk_response(s: String) -> std::result::Result<Response<Full<Bytes>>, hyper::Error> {
             Ok(Response::builder().body(Full::new(Bytes::from(s))).unwrap())
         }
 
