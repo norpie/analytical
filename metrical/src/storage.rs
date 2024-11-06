@@ -3,14 +3,20 @@ use std::collections::HashSet;
 use crate::models::Metric;
 use crate::query::MetricQuery;
 use chrono::Utc;
-use storeful::{intersect, prelude::*, traits::ModelEndpoints, Storeful};
+use storeful::{intersect, prelude::*, BackendDatabase, ModelEndpoints, Storeful};
 
-pub struct Metrical {
-    storeful: Storeful,
+pub struct Metrical<B>
+where
+    B: BackendDatabase,
+{
+    storeful: Storeful<B>,
 }
 
-impl Metrical {
-    pub fn new(storeful: Storeful) -> Self {
+impl<B> Metrical<B>
+where
+    B: BackendDatabase,
+{
+    pub fn new(storeful: Storeful<B>) -> Self {
         Self { storeful }
     }
 
@@ -35,7 +41,10 @@ impl Metrical {
     }
 }
 
-impl ModelEndpoints<Metric, MetricQuery> for Metrical {
+impl<B> ModelEndpoints<Metric, MetricQuery> for Metrical<B>
+where
+    B: BackendDatabase,
+{
     async fn post(&mut self, metric: Metric) -> Result<()> {
         let timestamp = format!("{:0>20}", metric.timestamp);
         let primary = format!(
@@ -51,7 +60,7 @@ impl ModelEndpoints<Metric, MetricQuery> for Metrical {
         self.storeful.backend.create_index(
             "timestamp",
             &primary,
-            &format!("timestamp:{:0>20}|{}", timestamp, primary),
+            &format!("timestamp|{:0>20}|{}", timestamp, primary),
         )?;
 
         self.storeful.backend.create_index(
@@ -64,7 +73,7 @@ impl ModelEndpoints<Metric, MetricQuery> for Metrical {
             self.storeful.backend.create_index(
                 "labels",
                 &primary,
-                &format!("label:{}:{}|{}", label.key, label.value, &primary),
+                &format!("label|{}:{}|{}", label.key, label.value, &primary),
             )?;
         }
 
@@ -82,7 +91,6 @@ impl ModelEndpoints<Metric, MetricQuery> for Metrical {
 
     async fn query(&mut self, query: MetricQuery) -> Result<Vec<Metric>> {
         let mut primaries = HashSet::new();
-        let start = Utc::now();
         if let Some(name) = query.name {
             let name_key = format!("name|{}|", name);
             let name_primaries = self.storeful.backend.query_index("name", &name_key)?;
@@ -96,7 +104,6 @@ impl ModelEndpoints<Metric, MetricQuery> for Metrical {
                     .unwrap()
             );
         }
-        let after_name = Utc::now();
         if query.timestamp_start.is_some() || query.timestamp_end.is_some() {
             let timestamp_primaries = self
                 .storeful
@@ -104,27 +111,13 @@ impl ModelEndpoints<Metric, MetricQuery> for Metrical {
                 .query_timestamp_index(query.timestamp_start, query.timestamp_end)?;
             intersect(&mut primaries, timestamp_primaries);
         }
-        let after_timestamp = Utc::now();
         if let Some(labels) = query.labels {
             for label in labels.0 {
-                let label_key = format!("label:{}:{}|", label.key, label.value);
+                let label_key = format!("label|{}:{}|", label.key, label.value);
                 let label_primaries = self.storeful.backend.query_index("labels", &label_key)?;
                 intersect(&mut primaries, label_primaries);
             }
         }
-        let after_labels = Utc::now();
-        println!(
-            "Querying name took {}us",
-            (after_name - start).num_microseconds().unwrap()
-        );
-        println!(
-            "Querying timestamp took {}us",
-            (after_timestamp - after_name).num_microseconds().unwrap()
-        );
-        println!(
-            "Querying labels took {}us",
-            (after_labels - after_timestamp).num_microseconds().unwrap()
-        );
         self.get_metrics(&primaries)
     }
 }
