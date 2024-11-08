@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, sync::PoisonError};
 
 use thiserror::Error;
 
@@ -6,6 +6,9 @@ pub type Result<T> = std::result::Result<T, StorefulError>;
 
 #[derive(Error, Debug)]
 pub enum StorefulError {
+    #[error("misc error")]
+    Misc,
+
     #[error("error parsing {1} at position {0}")]
     Parse(u32, char),
 
@@ -26,7 +29,6 @@ pub enum StorefulError {
 
     // #[error("rocksdb error")]
     // Rocks(#[from] rocksdb::Error),
-
     #[error("sled error")]
     Sled(#[from] sled::Error),
 
@@ -49,4 +51,13 @@ pub enum StorefulError {
 
     #[error("invalid query range")]
     InvalidQueryRange,
+
+    #[error("lock poisoned")]
+    LockPoisoned,
+}
+
+impl<T> From<PoisonError<T>> for StorefulError {
+    fn from(_: PoisonError<T>) -> Self {
+        StorefulError::LockPoisoned
+    }
 }

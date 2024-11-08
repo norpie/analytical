@@ -1,7 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use storage::Metrical;
 use storeful::{prelude::*, sled::SledBackend, Args, Config, Storeful};
+use tokio::sync::Mutex;
 
 mod models;
 mod query;
@@ -40,7 +41,7 @@ mod tests {
     use query::MetricQuery;
     use rand::prelude::SliceRandom;
     use storage::Metrical;
-    use storeful::{ContextValue, Context, ModelEndpoints, Storeful};
+    use storeful::{Context, ContextValue, ModelEndpoints, Storeful};
 
     #[tokio::test]
     async fn test() {

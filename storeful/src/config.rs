@@ -1,7 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use futures::future::join_all;
 use serde::{de::DeserializeOwned, Serialize};
+use tokio::sync::Mutex;
 
 use crate::{http, prelude::*, Args, ModelEndpoints, Query};
 
