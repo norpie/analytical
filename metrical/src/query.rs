@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use storeful::{Label, Labels, Query};
+use storeful::{ContextValue, Context, Query};
 
 impl Query for MetricQuery {
     fn from_str(s: &str) -> Self {
@@ -16,7 +16,7 @@ pub struct MetricQuery {
     pub name: Option<String>,
     pub timestamp_start: Option<i64>,
     pub timestamp_end: Option<i64>,
-    pub labels: Option<Labels>,
+    pub context: Option<Context>,
 }
 
 impl MetricQuery {
@@ -25,7 +25,7 @@ impl MetricQuery {
             name: None,
             timestamp_start: None,
             timestamp_end: None,
-            labels: None,
+            context: None,
         }
     }
 
@@ -44,12 +44,12 @@ impl MetricQuery {
         self
     }
 
-    pub fn with_label(mut self, label: Label) -> Self {
-        if let Some(mut labels) = self.labels {
-            labels.0.push(label);
-            self.labels = Some(labels);
+    pub fn with_context_value(mut self, context_value: ContextValue) -> Self {
+        if let Some(mut context) = self.context {
+            context.0.push(context_value);
+            self.context = Some(context);
         } else {
-            self.labels = Some(Labels(vec![label]));
+            self.context = Some(Context(vec![context_value]));
         }
         self
     }

@@ -2,19 +2,19 @@ use std::fmt::Display;
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
-use storeful::Labels;
+use storeful::Context;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IncomingLog {
     pub timestamp: Option<i64>,
-    pub labels: Labels,
+    pub context: Context,
     pub message: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Log {
     pub timestamp: i64,
-    pub labels: Labels,
+    pub context: Context,
     pub message: String,
 }
 
@@ -27,7 +27,7 @@ impl From<IncomingLog> for Log {
             timestamp: incoming
                 .timestamp
                 .unwrap_or(Utc::now().timestamp_nanos_opt().unwrap()),
-            labels: incoming.labels,
+            context: incoming.context,
             message: incoming.message,
         }
     }
@@ -40,7 +40,7 @@ impl Display for Log {
             f,
             "{} {} {}",
             date.to_rfc3339_opts(SecondsFormat::Nanos, true),
-            self.labels,
+            self.context,
             self.message
         )
     }

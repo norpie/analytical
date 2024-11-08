@@ -2,13 +2,13 @@ use std::fmt::Display;
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
-use storeful::Labels;
+use storeful::Context;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IncomingMetric {
     pub timestamp: Option<i64>,
     pub name: String,
-    pub labels: Labels,
+    pub context: Context,
     pub value: f64,
 }
 
@@ -16,7 +16,7 @@ pub struct IncomingMetric {
 pub struct Metric {
     pub timestamp: i64,
     pub name: String,
-    pub labels: Labels,
+    pub context: Context,
     pub value: f64,
 }
 
@@ -27,7 +27,7 @@ impl From<IncomingMetric> for Metric {
                 .timestamp
                 .unwrap_or(Utc::now().timestamp_nanos_opt().unwrap()),
             name: incoming.name,
-            labels: incoming.labels,
+            context: incoming.context,
             value: incoming.value,
         }
     }
@@ -41,7 +41,7 @@ impl Display for Metric {
             "{} {}{} {}",
             date.to_rfc3339_opts(SecondsFormat::Nanos, true),
             self.name,
-            self.labels,
+            self.context,
             self.value
         )
     }

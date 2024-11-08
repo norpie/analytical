@@ -39,7 +39,7 @@ where
             "{}|{}|{}",
             metric.name,
             timestamp,
-            metric.labels.to_key_string()
+            metric.context.to_key_string()
         );
         self.storeful
             .backend
@@ -57,11 +57,11 @@ where
             &format!("name|{}|{}", metric.name, primary),
         )?;
 
-        for label in metric.labels.0 {
+        for context_value in metric.context.0 {
             self.storeful.backend.create_index(
-                "labels",
+                "context",
                 &primary,
-                &format!("label|{}:{}|{}", label.key, label.value, &primary),
+                &format!("context_value|{}:{}|{}", context_value.key, context_value.value, &primary),
             )?;
         }
 
@@ -91,11 +91,11 @@ where
                 .query_timestamp_index(query.timestamp_start, query.timestamp_end)?;
             intersect(&mut primaries, timestamp_primaries);
         }
-        if let Some(labels) = query.labels {
-            for label in labels.0 {
-                let label_key = format!("label|{}:{}|", label.key, label.value);
-                let label_primaries = self.storeful.backend.query_index("labels", &label_key)?;
-                intersect(&mut primaries, label_primaries);
+        if let Some(context) = query.context {
+            for context_value in context.0 {
+                let context_value_key = format!("context_value|{}:{}|", context_value.key, context_value.value);
+                let context_value_primaries = self.storeful.backend.query_index("context", &context_value_key)?;
+                intersect(&mut primaries, context_value_primaries);
             }
         }
         self.get_metrics(&primaries)

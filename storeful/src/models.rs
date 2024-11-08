@@ -8,39 +8,39 @@ pub struct IncomingBody<T> {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Label {
+pub struct ContextValue {
     pub key: String,
     pub value: String,
 }
 
 /// `key1="value1"`
-impl Display for Label {
+impl Display for ContextValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}=\"{}\"", self.key, self.value)
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Labels(pub Vec<Label>);
+pub struct Context(pub Vec<ContextValue>);
 
 /// `{ key1="value1", key2="value2" }`
-impl Display for Labels {
+impl Display for Context {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let labels = self
+        let context = self
             .0
             .iter()
-            .map(|label| format!("{}", label))
+            .map(|context_value| format!("{}", context_value))
             .collect::<Vec<String>>()
             .join(", ");
-        write!(f, "{{{}}}", labels)
+        write!(f, "{{{}}}", context)
     }
 }
 
-impl Labels {
+impl Context {
     pub fn to_key_string(&self) -> String {
         self.0
             .iter()
-            .map(|label| format!("{}=\"{}\"", label.key, label.value))
+            .map(|context_value| format!("{}=\"{}\"", context_value.key, context_value.value))
             .collect::<Vec<String>>()
             .join(",")
     }

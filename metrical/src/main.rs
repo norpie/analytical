@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
     let sled = SledBackend::open(
         args.db_path(),
         "metrics".into(),
-        &["name", "timestamp", "labels"],
+        &["name", "timestamp", "context"],
     )?;
 
     let storeful = Storeful::new(sled);
@@ -40,12 +40,12 @@ mod tests {
     use query::MetricQuery;
     use rand::prelude::SliceRandom;
     use storage::Metrical;
-    use storeful::{Label, Labels, ModelEndpoints, Storeful};
+    use storeful::{ContextValue, Context, ModelEndpoints, Storeful};
 
     #[tokio::test]
     async fn test() {
         let path = PathBuf::from("./test.db");
-        let sled = SledBackend::open(&path, "metrics".into(), &["name", "timestamp", "labels"])
+        let sled = SledBackend::open(&path, "metrics".into(), &["name", "timestamp", "context"])
             .expect("Failed to open sled backend");
         let storeful = Storeful::new(sled);
         let mut metrical = Metrical::new(storeful);
@@ -69,15 +69,15 @@ mod tests {
                     .to_string(),
                 timestamp: random_timestamp,
                 value: random_value,
-                labels: Labels(vec![
-                    Label {
+                context: Context(vec![
+                    ContextValue {
                         key: "host".into(),
                         value: host_choices
                             .choose(&mut rand::thread_rng())
                             .unwrap()
                             .to_string(),
                     },
-                    Label {
+                    ContextValue {
                         key: "region".into(),
                         value: region_choices
                             .choose(&mut rand::thread_rng())
@@ -98,11 +98,11 @@ mod tests {
             .with_name("memory_usage".into())
             .with_timestamp_start(0)
             .with_timestamp_end(metric_count / 2)
-            .with_label(Label {
+            .with_context_value(ContextValue {
                 key: "host".into(),
                 value: "localhost".into(),
             })
-            .with_label(Label {
+            .with_context_value(ContextValue {
                 key: "region".into(),
                 value: "us-west".into(),
             });
