@@ -20,7 +20,7 @@ impl Display for ContextValue {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Context(pub Vec<ContextValue>);
 
 /// `{ key1="value1", key2="value2" }`
@@ -37,6 +37,15 @@ impl Display for Context {
 }
 
 impl Context {
+    pub fn add_value(&mut self, key: &str, value: &str) {
+        self.0.push(ContextValue { key: key.into(), value: value.into() });
+    }
+
+    pub fn with_value(mut self, key: &str, value: &str) -> Self {
+        self.add_value(key, value);
+        self
+    }
+
     pub fn to_key_string(&self) -> String {
         self.0
             .iter()
