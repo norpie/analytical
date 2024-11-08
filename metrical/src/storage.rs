@@ -6,14 +6,14 @@ use storeful::{intersect, prelude::*, BackendDatabase, ModelEndpoints, Storeful}
 
 pub struct Metrical<B>
 where
-    B: BackendDatabase,
+    B: BackendDatabase + Send + Sync,
 {
     storeful: Storeful<B>,
 }
 
 impl<B> Metrical<B>
 where
-    B: BackendDatabase,
+    B: BackendDatabase + Send + Sync,
 {
     pub fn new(storeful: Storeful<B>) -> Self {
         Self { storeful }
@@ -31,7 +31,7 @@ where
 
 impl<B> ModelEndpoints<Metric, MetricQuery> for Metrical<B>
 where
-    B: BackendDatabase,
+    B: BackendDatabase + Send + Sync,
 {
     async fn post(&mut self, metric: Metric) -> Result<()> {
         let timestamp = format!("{:0>20}", metric.timestamp.timestamp_nanos_opt().unwrap());

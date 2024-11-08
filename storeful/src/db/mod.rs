@@ -25,14 +25,14 @@ pub trait BackendDatabase {
 
 pub struct Storeful<B>
 where
-    B: BackendDatabase,
+    B: BackendDatabase + Send + Sync,
 {
     pub backend: B,
 }
 
 impl<B> Storeful<B>
 where
-    B: BackendDatabase,
+    B: BackendDatabase + Send + Sync,
 {
     pub fn new(backend: B) -> Self {
         Self { backend }
