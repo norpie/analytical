@@ -34,7 +34,7 @@ where
     B: BackendDatabase,
 {
     async fn post(&mut self, metric: Metric) -> Result<()> {
-        let timestamp = format!("{:0>20}", metric.timestamp);
+        let timestamp = format!("{:0>20}", metric.timestamp.timestamp_nanos_opt().unwrap());
         let primary = format!(
             "{}|{}|{}",
             metric.name,
@@ -61,7 +61,10 @@ where
             self.storeful.backend.create_index(
                 "context",
                 &primary,
-                &format!("context_value|{}:{}|{}", context_value.key, context_value.value, &primary),
+                &format!(
+                    "context_value|{}:{}|{}",
+                    context_value.key, context_value.value, &primary
+                ),
             )?;
         }
 
@@ -93,8 +96,14 @@ where
         }
         if let Some(context) = query.context {
             for context_value in context.0 {
-                let context_value_key = format!("context_value|{}:{}|", context_value.key, context_value.value);
-                let context_value_primaries = self.storeful.backend.query_index("context", &context_value_key)?;
+                let context_value_key = format!(
+                    "context_value|{}:{}|",
+                    context_value.key, context_value.value
+                );
+                let context_value_primaries = self
+                    .storeful
+                    .backend
+                    .query_index("context", &context_value_key)?;
                 intersect(&mut primaries, context_value_primaries);
             }
         }
