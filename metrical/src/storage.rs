@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use crate::models::Metric;
 use crate::query::MetricQuery;
-use chrono::Utc;
 use storeful::{intersect, prelude::*, BackendDatabase, ModelEndpoints, Storeful};
 
 pub struct Metrical<B>
@@ -21,22 +20,11 @@ where
     }
 
     pub fn get_metrics(&self, primaries: &HashSet<Box<[u8]>>) -> Result<Vec<Metric>> {
-        let start = Utc::now();
         let results = self.storeful.backend.get_multi(primaries)?;
-        let after_get = Utc::now();
         let mut metrics = Vec::new();
         for result in results {
             metrics.push(bincode::deserialize(&result)?);
         }
-        let after_deserialize = Utc::now();
-        println!(
-            "Getting metrics took {}us",
-            (after_get - start).num_microseconds().unwrap()
-        );
-        println!(
-            "Deserializing metrics took {}us",
-            (after_deserialize - after_get).num_microseconds().unwrap()
-        );
         Ok(metrics)
     }
 }
@@ -94,15 +82,7 @@ where
         if let Some(name) = query.name {
             let name_key = format!("name|{}|", name);
             let name_primaries = self.storeful.backend.query_index("name", &name_key)?;
-            let after_name_query = Utc::now();
             intersect(&mut primaries, name_primaries);
-            let after_intersect = Utc::now();
-            println!(
-                "intersecting name took {}us",
-                (after_intersect - after_name_query)
-                    .num_microseconds()
-                    .unwrap()
-            );
         }
         if query.timestamp_start.is_some() || query.timestamp_end.is_some() {
             let timestamp_primaries = self

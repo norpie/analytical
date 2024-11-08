@@ -140,11 +140,8 @@ impl RocksDBBackend {
     }
 
     pub fn query_index_cf(&self, cf: &ColumnFamily, index_key: &str) -> Result<HashSet<Box<[u8]>>> {
-        let start = Utc::now();
         let mut results = HashSet::new();
-        let after_results = Utc::now();
         let iter = self.db.prefix_iterator_cf(cf, index_key);
-        let after_get_iter = Utc::now();
         for iter_result in iter {
             let (key, primary) = iter_result?;
             if !key.starts_with(index_key.as_bytes()) {
@@ -152,10 +149,6 @@ impl RocksDBBackend {
             }
             results.insert(primary);
         }
-        let after_iter = Utc::now();
-        println!("results: {:?}us", (after_results - start).num_microseconds().unwrap());
-        println!("get_iter: {:?}us", (after_get_iter - after_results).num_microseconds().unwrap());
-        println!("iter: {:?}us", (after_iter - after_get_iter).num_microseconds().unwrap());
         Ok(results)
     }
 }
